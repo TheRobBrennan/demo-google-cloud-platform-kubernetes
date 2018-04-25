@@ -68,3 +68,10 @@ To verify Kubernetes has been installed correctly:
 To see what components have been installed as part of your Google Cloud SDK:
 
     $ gcloud components list
+
+## Google Cloud Platform
+### Create a new project
+Please visit [https://console.cloud.google.com/](https://console.cloud.google.com/) and create a project. For the purposes of this guide, the project name will be `demo-gcp`
+
+Once that has completed, click on the `Products and Services` icon and select `Container Engine`. This is where our Docker images will live. `Container Clusters` manages the nodes of Google Compute Engine instances. `Container Registry` is the repository which will contain all of the Docker images that we will use to create our containers.
+ 
