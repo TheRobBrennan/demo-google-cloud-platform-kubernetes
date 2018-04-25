@@ -9,7 +9,7 @@ For more information on the key technologies used in this project, please refer 
 + [Kubernetes](https://kubernetes.io)
 + [Node.js](https://nodejs.org/)
 
-This tutorial was heavily inspired by the work covered in [Google Cloud Platform I: Deploy a Docker App To Google Container Engine with Kubernetes](https://scotch.io/tutorials/google-cloud-platform-i-deploy-a-docker-app-to-google-container-engine-with-kubernetes)
+This tutorial was heavily inspired by the work covered in [Google Cloud Platform I: Deploy a Docker App To Google Container Engine with Kubernetes](https://scotch.io/tutorials/google-cloud-platform-i-deploy-a-docker-app-to-google-container-engine-with-kubernetes) - and for the sake of completeness some material has been incorporated into this guide.
 
 # Part 1 - Initial setup
 ## Command line
@@ -117,21 +117,20 @@ To start a proxy server to Kubernetes:
 
 Once you have run the above command, leave the window open and open a new tab.
 
-# Part 3 - Demo application
+# Part 3 - Dockerize the demo application
 Our demo application is a simple web server written using express - located at `./containers/web/index.js`
 
-## Dockerize the app
-### Create a Docker image
+## Create a Docker image
 Our Docker image will contain our demo application and all required modules.
 
 To see details of how we are using `Dockerfile` to build our image, please take a look at `./containers/web/Dockerfile`
 
-### Build our Docker image for Google Cloud Platform
+## Build our Docker image for Google Cloud Platform
 In order to create our Google Cloud Platform ready Docker image, we need to follow the naming convention `gcr.io/{$project_id}/{image}:{tag}`
 
 To build our Docker image for the web application:
 
-    $ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.0 .
+    $ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.0 ./containers/web
 
 We should be able to see our Docker image by running:
 
@@ -142,9 +141,55 @@ We should be able to see our Docker image by running:
     node                               9.11.1-alpine       7af437a39ec2        2 weeks ago              68.4MB    
     ```
 
-### Push our Docker image to the Container Registry
+## Push our Docker image to the Container Registry
 To push our image to our Google Cloud Platform Container Registry:
 
     $ gcloud docker -- push gcr.io/symmetric-rune-202220/web:0.1.0
 
 To verify that the image exists within our repository, please go to the Dashboard and go to `Products & Services > Container Registry > Images`. Notice that the last part of our image tag (above) was `web:0.1.0`. You should see an image named `web` within this view. Click on the `web` image and you will see a list of tagged images - our demo app.
+
+# Part 4 - Instantiate a Docker container
+## Kubernetes
+At this point, we have a Docker image of our application ready for use. Our next step will be to create a container based upon that image.
+
+We will accomplish this by creating a Kubernetes pod for our container.
+
+```
+A Kubernetes pod is a group of containers, tied together for the purposes of administration and networking that are always co-located and co-scheduled, and run in a shared context.
+```
+
+Containers within a pod share an IP address and port space, and can find each other via `localhost`
+
+### Deployment
+There are two ways to create a deployment using the `kubectl` command. You can either specify the parameters in a `yml` file or the command-line.
+
+Deploying via a `yml` file is the preferred way to go, as you can easily tweak and adjust deployment and scaling in an easy-to-read manner. For the purposes of this demo, though, it will be good to at least acknowledge how you might deploy from the command line if desired.
+
+#### Command line
+The deployment name is a unique identifier for your deployment that will be used to reference it later on. Specify the image name to create the deployment from and finally a port which will be mapped to our applications port that is exposed (see `Dockerfile`):
+
+    $ kubectl run {deployment_name} --image=gcr.io/$PROJECT_ID/{name}:{tag} --port={port}
+
+#### YML file
+We have defined our deployment configuration in `./deployment.yml`.
+
+To deploy:
+
+    $ kubectl create -f deployment.yml
+
+To view the deployment:
+
+    $ kubectl get deployments
+    ** OR **
+    $ kubectl get deployments -w
+
+To view the pods:
+
+    $ kubectl get pods
+    ** OR **
+    $ kubectl get pods -w
+
+To delete a deployment:
+
+    $ kubectl delete deployments/demogcp-dep
+
