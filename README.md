@@ -10,11 +10,12 @@ For more information on the key technologies used in this project, please refer 
 This tutorial was heavily inspired by the work covered in [Google Cloud Platform I: Deploy a Docker App To Google Container Engine with Kubernetes](https://scotch.io/tutorials/google-cloud-platform-i-deploy-a-docker-app-to-google-container-engine-with-kubernetes)
 
 # Initial setup
-## Docker
+## Command line
+### Docker
 If you do not have Docker installed on your machine, please download and install [Docker Community Edition](https://www.docker.com/community-edition) for your development machine.
 
-## Google Cloud SDK
-### Installation
+### Google Cloud SDK
+#### Installation
 We will need to download and install `gcloud` - the command line tool for managing resources on Google Cloud Platform.
 
 To download and install the latest version of the Google Cloud SDK, please refer to [https://cloud.google.com/sdk/docs/](https://cloud.google.com/sdk/docs/):
@@ -33,7 +34,7 @@ To verify that you have installed the Google Cloud SDK correctly:
     core 2018.04.20
     gsutil 4.30
 
-### Connect your account
+#### Connect your account
 To authenticate gcloud with your Google account, you must run the initialization command:
 
     $ gcloud init
@@ -44,7 +45,7 @@ Once you see "You are now authenticated with the Google Cloud SDK!" you may clos
 
 Follow the prompts to select a default project for `gcloud`. This can be changed later.
 
-### Verify initial configuration
+#### Verify initial configuration
 To verify the initial `gcloud` configuration:
 
     $ gcloud config list
@@ -54,3 +55,16 @@ To verify the initial `gcloud` configuration:
 
     Your active configuration is: [default]
     
+### Kubernetes
+The easiest way to install Kubernetes is to install it as part of the Google Cloud SDK:
+
+    $ gcloud components install kubectl
+
+To verify Kubernetes has been installed correctly:
+
+    $ kubectl version
+
+### Wrapping up installation
+To see what components have been installed as part of your Google Cloud SDK:
+
+    $ gcloud components list
