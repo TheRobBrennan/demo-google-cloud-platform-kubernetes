@@ -1,6 +1,8 @@
 # Welcome
 This project is intended to serve as a starting point documenting how to setup a Dockerized web application and deploy it to Google Cloud Platform (GCP) using Kubernetes from scratch.
 
+If you do not have an account on Google Cloud Platform (GCP), please create one at [https://cloud.google.com](https://cloud.google.com). Currently you can sign up for a free account for one year - and have the ability to run limited Google Cloud Platform services for free once the trial has expired. A credit card is required.
+
 For more information on the key technologies used in this project, please refer to
 + [Docker](https://www.docker.com)
 + [Google Cloud Platform](https://cloud.google.com/)
@@ -117,3 +119,32 @@ Once you have run the above command, leave the window open and open a new tab.
 
 # Part 3 - Demo application
 Our demo application is a simple web server written using express - located at `./containers/web/index.js`
+
+## Dockerize the app
+### Create a Docker image
+Our Docker image will contain our demo application and all required modules.
+
+To see details of how we are using `Dockerfile` to build our image, please take a look at `./containers/web/Dockerfile`
+
+### Build our Docker image for Google Cloud Platform
+In order to create our Google Cloud Platform ready Docker image, we need to follow the naming convention `gcr.io/{$project_id}/{image}:{tag}`
+
+To build our Docker image for the web application:
+
+    $ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.0 .
+
+We should be able to see our Docker image by running:
+
+    $ docker images
+    ```
+    REPOSITORY                         TAG                 IMAGE ID            CREATED                  SIZE
+    gcr.io/symmetric-rune-202220/web   0.1.0               0105dac33095        Less than a second ago   70.2MB
+    node                               9.11.1-alpine       7af437a39ec2        2 weeks ago              68.4MB    
+    ```
+
+### Push our Docker image to the Container Registry
+To push our image to our Google Cloud Platform Container Registry:
+
+    $ gcloud docker -- push gcr.io/symmetric-rune-202220/web:0.1.0
+
+To verify that the image exists within our repository, please go to the Dashboard and go to `Products & Services > Container Registry > Images`. Notice that the last part of our image tag (above) was `web:0.1.0`. You should see an image named `web` within this view. Click on the `web` image and you will see a list of tagged images - our demo app.
