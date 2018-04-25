@@ -99,3 +99,18 @@ In our example, the command you would have needed to supply would have been:
     $ gcloud beta container --project "symmetric-rune-202220" clusters create "demogcp-cluster" --zone "us-central1-a" --username "admin" --cluster-version "1.8.8-gke.0" --machine-type "n1-standard-1" --image-type "COS" --disk-size "100" --scopes "https://www.googleapis.com/auth/compute","https://www.googleapis.com/auth/devstorage.read_only","https://www.googleapis.com/auth/logging.write","https://www.googleapis.com/auth/monitoring","https://www.googleapis.com/auth/servicecontrol","https://www.googleapis.com/auth/service.management.readonly","https://www.googleapis.com/auth/trace.append" --num-nodes "3" --network "default" --enable-cloud-logging --enable-cloud-monitoring --subnetwork "default" --addons HorizontalPodAutoscaling,HttpLoadBalancing,KubernetesDashboard
 
 Be sure to wait for a few moments and occasionally refresh the page. Once you see the green checkmark next to your cluster, you may continue on.
+
+#### Connect Kubernetes
+Now that we have a cluster on Google Cloud Platform that will contain our containerized application, we need to connect our local development environment to the cluster.
+
+##### Obtain credentials from the cluster
+Click on the `Connect` button (while viewing the cluster in the `Kubernetes clusters` section). You can copy the command that you need to run from the command line to connect your local development environment to the cluster:
+
+    $ gcloud container clusters get-credentials demogcp-cluster --zone us-central1-a --project symmetric-rune-202220
+
+##### Start proxy server
+To start a proxy server to Kubernetes:
+
+    $ kubectl proxy
+
+Once you have run the above command, leave the window open and open a new tab.
