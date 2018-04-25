@@ -1,0 +1,23 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  # Future files might want to use names like demogcp-staging, demogcp-prod, etc
+  name: demogcp-dep
+  labels:
+    # Project ID
+    app: symmetric-rune-202220
+spec:
+  # Run two instances of our application (you can scale up or down here!!)
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: symmetric-rune-202220
+    spec:
+      # Container details / Ports to expose (described in Dockerfile)
+      containers:
+        - name: web
+          image: gcr.io/symmetric-rune-202220/web:0.1.0
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 8000
