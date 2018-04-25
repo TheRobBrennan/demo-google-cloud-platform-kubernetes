@@ -114,3 +114,6 @@ To start a proxy server to Kubernetes:
     $ kubectl proxy
 
 Once you have run the above command, leave the window open and open a new tab.
+
+# Part 3 - Demo application
+Our demo application is a simple web server written using express - located at `./containers/web/index.js`

@@ -13,7 +13,7 @@
     "docker:nuke:containers": "docker rm $(docker ps -aq) || true",
     "docker:nuke:images": "docker rmi -f $(docker images -q) || true",
     "docker:nuke": "npm run docker:containers:stop && npm run docker:nuke:containers && npm run docker:nuke:images",
-    "docker:refresh": "npm run docker:down && npm run docker:up:build"    
+    "docker:refresh": "npm run docker:down && npm run docker:up:build"
   },
   "repository": {
     "type": "git",
@@ -24,5 +24,8 @@
   "bugs": {
     "url": "https://github.com/TheRobBrennan/demo-google-cloud-platform-kubernetes/issues"
   },
-  "homepage": "https://github.com/TheRobBrennan/demo-google-cloud-platform-kubernetes#readme"
+  "homepage": "https://github.com/TheRobBrennan/demo-google-cloud-platform-kubernetes#readme",
+  "dependencies": {
+    "express": "^4.16.3"
+  }
 }
