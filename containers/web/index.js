@@ -2,6 +2,7 @@ const app = require("express")()
 const port = process.env.PORT || 8000
 
 app.get("/", (req, res) => {
+  console.log(`GET /`)
   res.status(200).json({ message: "Hello world!" })
 })
 
