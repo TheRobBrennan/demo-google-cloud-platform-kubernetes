@@ -1,0 +1,28 @@
+{
+  "name": "demo-google-cloud-platform-kubernetes",
+  "version": "0.1.0",
+  "description": "A starting point to explore deploying a Dockerized app to Google Cloud Platform (GCP) with Kubernetes",
+  "main": "index.js",
+  "scripts": {
+    "docker:up": "docker-compose up -d && docker-compose logs -f",
+    "docker:up:clean": "docker-compose up --build -d && docker-compose logs -f",
+    "docker:down": "docker-compose down || true",
+    "docker:containers:list": "docker ps -a",
+    "docker:containers:stop": "docker stop $(docker ps -aq) || true",
+    "docker:images:list": "docker images",
+    "docker:nuke:containers": "docker rm $(docker ps -aq) || true",
+    "docker:nuke:images": "docker rmi -f $(docker images -q) || true",
+    "docker:nuke": "npm run docker:containers:stop && npm run docker:nuke:containers && npm run docker:nuke:images",
+    "docker:refresh": "npm run docker:down && npm run docker:up:build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheRobBrennan/demo-google-cloud-platform-kubernetes.git"
+  },
+  "author": "Rob Brennan <rob@therobbrennan.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TheRobBrennan/demo-google-cloud-platform-kubernetes/issues"
+  },
+  "homepage": "https://github.com/TheRobBrennan/demo-google-cloud-platform-kubernetes#readme"
+}
