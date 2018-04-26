@@ -161,7 +161,7 @@ A Kubernetes pod is a group of containers, tied together for the purposes of adm
 Containers within a pod share an IP address and port space, and can find each other via `localhost`
 
 ### Deployment
-There are two ways to create a deployment using the `kubectl` command. You can either specify the parameters in a `yml` file or the command-line.
+There are two ways to create a deployment using the `kubectl` command. You can either specify the parameters in a `yml` file or the command line.
 
 Deploying via a `yml` file is the preferred way to go, as you can easily tweak and adjust deployment and scaling in an easy-to-read manner. For the purposes of this demo, though, it will be good to at least acknowledge how you might deploy from the command line if desired.
 
@@ -193,3 +193,64 @@ To delete a deployment:
 
     $ kubectl delete deployments/demogcp-dep
 
+### Expose application to external traffic
+At this point, our deployment is only accessible within the Kubernetes cluster. Pods - like containers - can be destroyed and created at any time.
+
+In order to make our application accessible to the outside world, we need to create a Kubernetes service.
+
+```
+A Kubernetes Service is an abstraction which defines a logical set of Pods and a policy by which to access them - sometimes called a micro-service. It enables external traffic exposure, load balancing and service discovery for those Pods.
+```
+
+Expose your deployment as a service internally:
+
+    $ kubectl expose deployment demogcp-dep --target-port=8000 --type=NodePort
+
+To make your HTTP(S) web server application publicly accessible, you need to create an Ingress resource:
+
+    $ kubectl apply -f service.yml
+
+To see what services are available:
+
+    $ kubectl get services
+
+Once the service has been created, you can find the external IP by running:
+
+    $ kubectl get ingress basic-ingress
+
+```
+NAME            HOSTS     ADDRESS         PORTS     AGE
+basic-ingress   *         35.190.81.125   80        1m
+```
+
+Note: It may take a few minutes for Kubernetes Engine to allocate an external IP address and set up forwarding rules until the load balancer is ready to serve your application. In the meanwhile, you may get errors such as HTTP 404 or HTTP 500 until the load balancer configuration is propagated across the globe.
+
+Based on the above output, our load balanced application is now online and ready to be viewed at [http://35.190.81.125](http://35.190.81.125).
+
+To delete a Kubernetes service:
+
+    $ kubectl delete service web-svc
+
+
+
+
+
+************
+// Deploy
+$ kubectl run demogcp-web --image=gcr.io/symmetric-rune-202220/web:0.1.0 --port 8000
+$ kubectl get pods
+
+// Expose
+$ kubectl expose deployment demogcp-web --type=LoadBalancer --port 80 --target-port 8000
+$ kubectl get services
+
+// Scale
+$ kubectl scale deployment demogcp-web --replicas=3
+$ kubectl get pods -w
+
+// Deploy a rolling update for a new version of the app
+Kubernetes Engine's rolling update mechanism ensures that your application remains up and available even as the system replaces instances of your old container image with your new one across all the running replicas.
+
+$ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.0a ./containers/web
+$ gcloud docker -- push gcr.io/symmetric-rune-202220/web:0.1.0a
+$ kubectl set image deployment/demogcp-web demogcp-web=gcr.io/symmetric-rune-202220/web:0.1.0a
