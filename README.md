@@ -11,6 +11,31 @@ For more information on the key technologies used in this project, please refer 
 
 This tutorial was heavily inspired by the work covered in [Google Cloud Platform I: Deploy a Docker App To Google Container Engine with Kubernetes](https://scotch.io/tutorials/google-cloud-platform-i-deploy-a-docker-app-to-google-container-engine-with-kubernetes) - and for the sake of completeness some material has been incorporated into this guide.
 
+## CHEAT SHEET
+If you have not set up this project on your development machine, please continue with section `Part 1 - Initial setup`
+
+If you have already set up this environment on your development machine - and you are wanting to deploy a new release of the app - all you will need to do is:
+
+// Build the new version of the app (example project id is `symmetric-rune-202220`) and give it a tag (0.1.1 in this example)
+
+    $ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.1 ./containers/web
+
+// Push the new Docker image to the Google Cloud Platform Container Registry
+
+    $ gcloud docker -- push gcr.io/symmetric-rune-202220/web:0.1.1
+
+// In one terminal window, open a proxy to our Kubernetes cluster
+$ kubectl proxy
+
+// In a second terminal window, start a rolling update so the `demogcp-web` deployment will use the new image
+
+    $ kubectl set image deployment/demogcp-web demogcp-web=gcr.io/symmetric-rune-202220/web:0.1.1
+
+// Confirm the deployment is a success by watching pods and deployment process
+
+    $ kubectl get pods -w
+    $ kubectl get deployments -w
+
 # Part 1 - Initial setup
 ## Command line
 ### Docker
@@ -19,6 +44,8 @@ If you do not have Docker installed on your machine, please download and install
 ### Google Cloud SDK
 #### Installation
 We will need to download and install `gcloud` - the command line tool for managing resources on Google Cloud Platform.
+
+IMPORTANT! Be sure to move the `./google-cloud-sdk` folder to someplace permanent on your development system. I made the mistake of simply running the below commands while the folder was in my `~/Downloads` directory and when I deleted it...the necessary commands no longer existed 😳 If this happened to you, don't sweat it. Put the `./google-cloud-sdk` folder in your home directory, and then modify your `~/.bash_profile` so that it points to the current location (Google Cloud SDK would have appended a few lines at the end of it for you already)
 
 To download and install the latest version of the Google Cloud SDK, please refer to [https://cloud.google.com/sdk/docs/](https://cloud.google.com/sdk/docs/):
 
@@ -128,6 +155,13 @@ To see details of how we are using `Dockerfile` to build our image, please take 
 ## Build our Docker image for Google Cloud Platform
 In order to create our Google Cloud Platform ready Docker image, we need to follow the naming convention `gcr.io/{$project_id}/{image}:{tag}`
 
+NOTE: The tag we use for the image is simply a string. Some possible ways we might consider tagging our `web` image might include:
+
+    gcr.io/symmetric-rune-202220/web:v1
+    gcr.io/symmetric-rune-202220/web:0.1.0
+    gcr.io/symmetric-rune-202220/web:20180416-hotfix
+    gcr.io/symmetric-rune-202220/web:0.1.1build12
+
 To build our Docker image for the web application:
 
     $ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.0 ./containers/web
@@ -161,21 +195,11 @@ A Kubernetes pod is a group of containers, tied together for the purposes of adm
 Containers within a pod share an IP address and port space, and can find each other via `localhost`
 
 ### Deployment
-There are two ways to create a deployment using the `kubectl` command. You can either specify the parameters in a `yml` file or the command line.
-
-Deploying via a `yml` file is the preferred way to go, as you can easily tweak and adjust deployment and scaling in an easy-to-read manner. For the purposes of this demo, though, it will be good to at least acknowledge how you might deploy from the command line if desired.
-
-#### Command line
-The deployment name is a unique identifier for your deployment that will be used to reference it later on. Specify the image name to create the deployment from and finally a port which will be mapped to our applications port that is exposed (see `Dockerfile`):
-
-    $ kubectl run {deployment_name} --image=gcr.io/$PROJECT_ID/{name}:{tag} --port={port}
-
-#### YML file
-We have defined our deployment configuration in `./deployment.yml`.
+For the purposes of this guide, we are going to create a deployment named `demogcp-web` and serving the application on port `8000` for project ID `symmetric-rune-202220` using the `web` Docker image tagged as `0.1.0`
 
 To deploy:
 
-    $ kubectl create -f deployment.yml
+    $ kubectl run demogcp-web --image=gcr.io/symmetric-rune-202220/web:0.1.0 --port 8000
 
 To view the deployment:
 
@@ -202,55 +226,184 @@ In order to make our application accessible to the outside world, we need to cre
 A Kubernetes Service is an abstraction which defines a logical set of Pods and a policy by which to access them - sometimes called a micro-service. It enables external traffic exposure, load balancing and service discovery for those Pods.
 ```
 
-Expose your deployment as a service internally:
+In the following example, we are going to create a `LoadBalancer` service that will accept traffic on port `80` and send it to our target port `8000`
 
-    $ kubectl expose deployment demogcp-dep --target-port=8000 --type=NodePort
+    $ kubectl expose deployment demogcp-web --type=LoadBalancer --port 80 --target-port 8000
 
-To make your HTTP(S) web server application publicly accessible, you need to create an Ingress resource:
-
-    $ kubectl apply -f service.yml
-
-To see what services are available:
+To see what services have been defined:
 
     $ kubectl get services
 
-Once the service has been created, you can find the external IP by running:
-
-    $ kubectl get ingress basic-ingress
-
+This will generate output similar to:
 ```
-NAME            HOSTS     ADDRESS         PORTS     AGE
-basic-ingress   *         35.190.81.125   80        1m
+NAME          TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)          AGE
+demogcp-dep   NodePort       10.7.254.155   <none>           8000:32265/TCP   16h
+demogcp-web   LoadBalancer   10.7.241.179   35.192.140.107   80:32307/TCP     15h
+kubernetes    ClusterIP      10.7.240.1     <none>           443/TCP          18h
 ```
+
 
 Note: It may take a few minutes for Kubernetes Engine to allocate an external IP address and set up forwarding rules until the load balancer is ready to serve your application. In the meanwhile, you may get errors such as HTTP 404 or HTTP 500 until the load balancer configuration is propagated across the globe.
 
-Based on the above output, our load balanced application is now online and ready to be viewed at [http://35.190.81.125](http://35.190.81.125).
+Based on the above output, our load balanced application is now online and ready to be viewed on our `EXTERNAL-IP` at [http://35.192.140.107](http://35.192.140.107).
 
 To delete a Kubernetes service:
 
     $ kubectl delete service web-svc
 
+# Part 5 - Rolling updates and scaling
+After your initial deployment, you will want to do common operations like:
+    + Perform a rolling update of a new image to the app
+    + Revert to a previous image if a critical error/flaw is discovered
+    + Scale the application
+        - Manually scale the container/service
+        - Automatically scale the container/service
 
-
-
-
-************
-// Deploy
-$ kubectl run demogcp-web --image=gcr.io/symmetric-rune-202220/web:0.1.0 --port 8000
-$ kubectl get pods
-
-// Expose
-$ kubectl expose deployment demogcp-web --type=LoadBalancer --port 80 --target-port 8000
-$ kubectl get services
-
-// Scale
-$ kubectl scale deployment demogcp-web --replicas=3
-$ kubectl get pods -w
-
-// Deploy a rolling update for a new version of the app
+## Perform a rolling update of a new image to the app
 Kubernetes Engine's rolling update mechanism ensures that your application remains up and available even as the system replaces instances of your old container image with your new one across all the running replicas.
 
-$ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.0a ./containers/web
-$ gcloud docker -- push gcr.io/symmetric-rune-202220/web:0.1.0a
-$ kubectl set image deployment/demogcp-web demogcp-web=gcr.io/symmetric-rune-202220/web:0.1.0a
+If you have already set up this environment on your development machine - and you are wanting to deploy a new release of the app - all you will need to do is:
+
+// Build the new version of the app (example project id is `symmetric-rune-202220`) and give it a tag (`0.1.1` in this example)
+
+    $ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.1 ./containers/web
+
+// Push the new Docker image to the Google Cloud Platform Container Registry
+
+    $ gcloud docker -- push gcr.io/symmetric-rune-202220/web:0.1.1
+
+// In one terminal window, open a proxy to our Kubernetes cluster
+$ kubectl proxy
+
+// In a second terminal window, start a rolling update so the `demogcp-web` deployment will use the new image
+
+    $ kubectl set image deployment/demogcp-web demogcp-web=gcr.io/symmetric-rune-202220/web:0.1.1
+
+// Confirm the deployment is a success by watching pods and deployment process
+
+    $ kubectl get pods -w
+    $ kubectl get deployments -w
+
+## Revert to a previous image if a critical error/flaw is discovered
+Uh oh! The latest release of our demo web app has a serious flaw. Time to perform a rolling update so we can rollback to our previous image `demogcp-web=gcr.io/symmetric-rune-202220/web:0.1.0`.
+
+If this image already exists in our Container Registry:
+
+// In one terminal window, open a proxy to our Kubernetes cluster
+$ kubectl proxy
+
+// In a second terminal window, start a rolling update so the `demogcp-web` deployment will use the new image
+
+    $ kubectl set image deployment/demogcp-web demogcp-web=gcr.io/symmetric-rune-202220/web:0.1.0
+
+// Confirm the deployment is a success by watching pods and deployment process
+
+    $ kubectl get pods -w
+    $ kubectl get deployments -w
+
+If this image does not exist in our Container Registry:
+Don't panic. All we need to do is build and tag the appropriate version of our app and then follow the steps above:
+
+// Build the new version of the app (example project id is `symmetric-rune-202220`) and give it a tag (`0.1.0` in this example)
+
+    $ docker build -f ./containers/web/Dockerfile -t gcr.io/symmetric-rune-202220/web:0.1.0 ./containers/web
+
+Now, move up a few lines and follow the instructions in `If this image already exists in our Container Registry`
+
+## Scale the application
+The time has come to scale the application up or down. Now what? 
+
+For the purposes of this guide, we will be working on scaling our `demogcp-web` deployment as desired.
+
+### Manually scale the container/service
+First thing you'll want to do is get a list of all available deployments (containers/services):
+
+    $ kubectl get deployments
+
+```
+NAME          DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+demogcp-web   1         1         1            1           16h
+```
+
+Right now we see our `demogcp-web` deployment contains one available node (VM).
+
+To scale our service to three nodes (VMs):
+
+    $ kubectl scale deployment demogcp-web --replicas=3
+
+    We can verify that our scaling is a success by watching the pods and/or deployment:
+    
+        $ kubectl get pods -w
+
+        ```
+        NAME                           READY     STATUS    RESTARTS   AGE
+        demogcp-web-6689dcf679-58tj2   1/1       Running   0          12s
+        demogcp-web-6689dcf679-lh2j8   1/1       Running   0          12s
+        demogcp-web-6689dcf679-xb7dt   1/1       Running   0          16h
+        ```
+
+    Our three pods have scaled up as expected - `READY` and with a `STATUS` of `Running`. 
+    
+    Let's check on the deployment:
+
+        $ kubectl get deployments
+
+        ```
+        NAME          DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+        demogcp-web   3         3         3            3           16h
+        ```
+
+To scale our service down from three nodes (VMs) to one node (VM):
+
+    $ kubectl scale deployment demogcp-web --replicas=1
+
+    We can verify that our scaling is a success by watching the pods and/or deployment:
+    
+        $ kubectl get pods -w
+
+        ```
+        NAME                           READY     STATUS        RESTARTS   AGE
+        demogcp-web-6689dcf679-58tj2   1/1       Terminating   0          16m
+        demogcp-web-6689dcf679-lh2j8   1/1       Terminating   0          16m
+        demogcp-web-6689dcf679-xb7dt   1/1       Running       0          16h
+        ```
+
+    Our three pods have scaled up as expected - one pod exists as `READY` and with a `STATUS` of `Running`; the other two pods have been terminated. 
+    
+    Let's check on the deployment:
+
+        $ kubectl get deployments
+
+        ```
+        NAME          DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+        demogcp-web   1         1         1            1           16h
+        ```
+
+### Automatically scale the container/service
+Manually scaling the cluster is all well and good, but we can let Kubernetes handle scaling, managing containers, etc for us. 
+
+In this example, we're going to start with a single node (VM) and if CPU utilization is above 75%, we want Kubernetes to create additional nodes (VMs) as desired - up to a limit of ten (10) nodes (VMs).
+
+First thing you'll want to do is get a list of all available deployments (containers/services):
+
+    $ kubectl get deployments
+
+```
+NAME          DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
+demogcp-web   1         1         1            1           16h
+```
+
+Right now we see our `demogcp-web` deployment contains one available node (VM).
+
+To define automatic scaling:
+
+    $ kubectl autoscale deployment nginx-deployment --min=1 --max=10 --cpu-percent=75
+
+Now, our Kubernetes cluster can freely spin up and spin down our nodes as desired. Now we can just sit back, enjoy meetings from some exotic location, and watch the profits roll in. Or maybe not, since this demo app will not light the world on fire. So sad. So sad.
+
+# Next steps
+Once you've experimented a bit, I would encourage you to explore these additional resources
+[Google Cloud: Deploying a containerized web application](https://cloud.google.com/kubernetes-engine/docs/tutorials/hello-app)
+[Google Cloud: Setting up HTTP Load Balancing with Ingress](https://cloud.google.com/kubernetes-engine/docs/tutorials/http-balancer)
+
+This guide was originally created by Rob Brennan <rob@therobbrennan.com>.
