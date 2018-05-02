@@ -11,6 +11,11 @@ For more information on the key technologies used in this project, please refer 
 
 This tutorial was heavily inspired by the work covered in [Google Cloud Platform I: Deploy a Docker App To Google Container Engine with Kubernetes](https://scotch.io/tutorials/google-cloud-platform-i-deploy-a-docker-app-to-google-container-engine-with-kubernetes) - and for the sake of completeness some material has been incorporated into this guide.
 
+## What about persistent storage and MySQL?
+Those two items are worthy of their own guide. This document will cover the basics of spinning up ephemeral Docker containers on Google Kubernetes Engine.
+
+There is a great [tutorial](https://cloud.google.com/nodejs/docs/tutorials/bookshelf-on-kubernetes-engine) that covers how to set up persistent storage (such as storing images to a bucket on Google Cloud) and using back-end databases (such as the Google Datastore and a Google Cloud instance of MySQL). BE WARNED - the tutorial is 90% helpful, however there were many glaring omissions. Please see my guide `ADVANCED_GCP_KBE.md` for important changes that you will want to make to actually have running code 🙃
+
 ## CHEAT SHEET
 If you have not set up this project on your development machine, please continue with section `Part 1 - Initial setup`
 
